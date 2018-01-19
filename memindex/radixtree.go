@@ -37,7 +37,7 @@ func NewRadixTree() *RadixTree {
 func (t *RadixTree) InsertOrUpdate(index uint32, item interface{}) error {
 	node := t.getTargetNode(index)
 	if node == nil {
-		return errors.New("Cannot get target node!")
+		return errors.New("cannot get target node")
 	}
 	node.slots[index&t.mask] = item
 	return nil
@@ -46,21 +46,20 @@ func (t *RadixTree) InsertOrUpdate(index uint32, item interface{}) error {
 func (t *RadixTree) getTargetNode(index uint32) *RadixTreeNode {
 	shift := t.getMaxShift(index)
 	// fmt.Printf("MaxShift:%d\n", shift)
-	slots := t.rnode.slots
 	curNode := t.rnode
 	for shift > 0 {
 		slotOffset := (index >> shift) & t.mask
+		curNode.Lock()
 		// this will not happen
-		if slots == nil {
-			slots = make([]interface{}, SLOTS_SIZE)
+		if curNode.slots == nil {
+			curNode.slots = make([]interface{}, SLOTS_SIZE)
 		}
-		if slots[slotOffset] == nil {
-			slots[slotOffset] = &RadixTreeNode{parent: curNode, offset: uint8(slotOffset), slots: make([]interface{}, SLOTS_SIZE)}
+		if curNode.slots[slotOffset] == nil {
+			curNode.slots[slotOffset] = &RadixTreeNode{parent: curNode, offset: uint8(slotOffset), slots: make([]interface{}, SLOTS_SIZE)}
 		}
-		curNode.slots = slots
+		curNode.Unlock()
 		// fmt.Println(slotOffset, curNode.slots)
-		curNode = slots[slotOffset].(*RadixTreeNode)
-		slots = curNode.slots
+		curNode = curNode.slots[slotOffset].(*RadixTreeNode)
 		shift -= RADIX_TREE_SHIFT
 	}
 	return curNode
